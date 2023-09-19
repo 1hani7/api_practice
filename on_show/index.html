@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<!--jquery-->
+<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+
+<script>
+
+let data = null;
+
+async function getMovies(){
+    let url = 'http://api.koreafilm.or.kr/openapi-data2/wisenut/search_api/search_json2.jsp?collection=kmdb_new2&'
+    let key = 'ServiceKey=K0B3Y48HAF56XXL0ADR2&';
+    let detail = 'detail=Y&'
+    // let title = 'title='+encodeURIComponent('오펜하이머')+'&';
+    let listCount = 'listCount=40&'
+    // let releaseDts = 'releaseDts=20230301&';
+    // let releaseDts = `releaseDts=${todayYYYYMMDD()}&`;
+    // let releaseDte = 'releaseDte=20240101&';
+    let releaseDts = `releaseDts=${releaseFilter()}&`;
+    let releaseDte = `releaseDte=${todayYYYYMMDD()}&`;
+
+    var temp = await fetch(url + key + detail + listCount + releaseDts + releaseDte ).then(r=>r.json()).then(r=>r);
+    return sortIt(refine(temp.Data[0].Result));
+}
+
+
+
+window.onload=async function(){
+    data = await getMovies();
+    console.log(data);
+
+    data.forEach(function(item, idx){
+        var res = document.getElementById("wrap");
+        var y = item.repRlsDate.slice(0, 4)
+        var m = item.repRlsDate.slice(4, 6)
+        var d = item.repRlsDate.slice(6, 8)
+
+        $("#wrap").append(
+            `   
+                <div class='cards'>
+                    <img src=${item.posters.split("|")[0]} />
+                    <div>
+                        <div>${item.title}</div>
+                        <div>장르 : ${item.genre}</div>
+                        <div>감독 : ${item.staffs.staff[0].staffNm}</div>
+                        <div>출연 : ${actors(item.actors.actor)}</div>
+                        <div>${item.plots.plot[0].plotText}</div>
+                        <div>개봉일 : ${y}.${m}.${d}</div>
+                        <div>러닝 : ${item.runtime}분</div>
+                        <div class="slideCon">
+                            <div class="trailerCon">
+                                <div class='frameCon'>
+                                    <iframe src="${item.vods.vod[0].vodUrl}"
+                                        frameborder="0" allowfullscreen scrolling="no">
+                                    </iframe>
+                                    <div>${item.vods.vod[0].vodClass}</div>
+                                </div>
+                                <div class='frameCon'>
+                                    <iframe src="${item.vods.vod[1].vodUrl}"
+                                        frameborder="0" allowfullscreen scrolling="no">
+                                    </iframe>
+                                    <div>${item.vods.vod[1].vodClass}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stlls">
+                            <div><img src="${item.stlls.split('|')[0]}" /></div>
+                            <div><img src="${item.stlls.split('|')[1]}" /></div>
+                            <div><img src="${item.stlls.split('|')[2]}" /></div>
+                        </div>
+                    </div>
+                </div>
+            `
+        )
+        // trailerSet('.frameCon', item.vods.vod)
+    })
+
+    $("img").click(function(){
+        $(".iframeContainer").toggle();
+        var frame = document.querySelector('iframe');
+        var inner = frame.contentWindow.document || frame.contentDocument;
+        // inner.body.style.transform = 'scale(0.5)';
+        // inner.style.zoom = '0.5';
+        console.log(inner.innerHTML())
+    })
+    
+}          
+
+function trailerSet(c,data){
+    $.each(data, function(idx, item){
+        $(c).append(
+            `
+            
+            `
+        )
+    })
+}
+
+
+function actors(item){
+    var arr = new Array();
+    for( i in item ){
+        arr.push(item[i].actorNm)
+    };
+    return arr;
+}
+
+
+function sortIt(data){
+    return data.sort( (a,b) => a['title'].localeCompare(b['title']) )
+}
+
+
+function refine(dt){
+    return dt.filter(function(item, idx){
+        return item.genre != "에로" &&
+        item.genre != "뮤직" &&
+        item.genre != "인물,뮤직" &&
+        item.posters != '' &&
+        item.use == "극장용" &&
+        item.vods.vod.length > 1 &&
+        item.vods.vod[0].vodUrl != '';
+    })
+}
+
+function todayYYYYMMDD() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1을 해줍니다.
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}${month}${day}`;
+}
+
+function releaseFilter(){
+    const timeBackNumber = 30
+    const currentDate = new Date();
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(currentDate.getDate() - timeBackNumber);
+    console.log(yesterday)
+    year = yesterday.getFullYear();
+    month = String(yesterday.getMonth() + 1).padStart(2, '0');
+    day = String(yesterday.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`
+}
+
+</script>
+<style>
+    *{box-sizing:border-box; padding:0; margin:0;}
+    .cards{
+        display:flex; height:inherit; margin:60px auto;
+        font-size:14px; width:700px; gap: 20px;
+    }
+    .cards > img{width:213px; height:303px;}
+    .stlls{
+        display:flex; gap:5px; overflow:hidden;
+        background-position: center;
+    }
+    .stlls > div > img{ width:200px;}
+    .cards > div{ width:467px; gap:10px;
+    display:flex; flex-direction: column; justify-content: center;}
+
+    .slideCon{
+        position:relative; width:100%; height:240px;
+        overflow-x:scroll; overflow-y:hidden;
+    }
+    .trailerCon{
+        display:flex; justify-content: space-between;
+        position:absolute;
+    }
+    .frameCon{
+        width:357px; height:233px; overflow:hidden;
+        position:relative; padding:0;
+        display:flex; flex-direction:column;
+        justify-content: end; align-items: center;
+    }
+    iframe{
+        position:absolute; top:0; left:0;
+        width:880px; height:535px;
+        transform-origin: top left;
+        transform: scale(0.4);
+    }
+
+    .slideCon::-webkit-scrollbar{
+        height:4px; background:rgba(0,0,0,0.4)
+    }
+    .slideCon::-webkit-scrollbar-thumb{
+        background:rgba(0,0,0,0.7); border-radius: 3px;
+    }
+    
+</style>
+</head>
+<body>
+    <div id="wrap"></div>
+</body>
+</html>

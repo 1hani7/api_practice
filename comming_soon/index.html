@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<!--jquery-->
+<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+
+<script>
+
+let data = null;
+
+async function getMovies(){
+    let url = 'http://api.koreafilm.or.kr/openapi-data2/wisenut/search_api/search_json2.jsp?collection=kmdb_new2&'
+    let key = 'ServiceKey=K0B3Y48HAF56XXL0ADR2&';
+    let detail = 'detail=Y&'
+    // let title = 'title='+encodeURIComponent('오펜하이머')+'&';
+    let listCount = 'listCount=500&'
+    // let releaseDts = 'releaseDts=20230801&';
+    let releaseDts = `releaseDts=${todayYYYYMMDD()}&`;
+    let releaseDte = 'releaseDte=20240101&';
+
+    var temp = await fetch(url + key + detail + listCount + releaseDts + releaseDte ).then(r=>r.json()).then(r=>r);
+    return refine(temp.Data[0].Result);
+}
+
+
+
+window.onload=async function(){
+    data = await getMovies();
+    console.log(data);
+
+    data.forEach(function(item, idx){
+        var res = document.getElementById("wrap");
+        var y = item.repRlsDate.slice(0, 4)
+        var m = item.repRlsDate.slice(4, 6)
+        var d = item.repRlsDate.slice(6, 8)
+
+        $("#wrap").append(
+            `   
+                <div class='cards'>
+                    <img src=${item.posters.split("|")[0]} />
+                    <div>
+                        <div>${item.title}</div>
+                        <div>${item.genre}</div>
+                        <div>${item.plots.plot[0].plotText}</div>
+                        <div>개봉일 : ${y}.${m}.${d}</div>
+                        <div>러닝 : ${item.runtime}분</div>
+                    </div>
+                </div>
+            `
+        )
+    })
+}
+
+
+
+
+function refine(dt){
+    return dt.filter(function(item, idx){
+        return item.genre != "에로";
+    })
+}
+
+function todayYYYYMMDD() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 월은 0부터 시작하므로 +1을 해줍니다.
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}${month}${day}`;
+}
+
+</script>
+<style>
+    .cards{
+        display:flex; height:inherit; margin:30px auto;
+        font-size:14px; width:700px; gap: 20px;
+    }
+    .cards img{width:213px; height:303px;}
+    .cards div{ width:467px; gap:10px;
+    display:flex; flex-direction: column; justify-content: center;}
+</style>
+</head>
+<body>
+    <div id="wrap"></div>
+</body>
+</html>
