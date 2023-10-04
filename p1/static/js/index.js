@@ -34,8 +34,8 @@ function tenDayCal(){
     var tmp = new Array();
 
     const currentDate = new Date();
-    const yesterday = new Date(currentDate);
     for( var i=1; i<11; i++ ){
+        const yesterday = new Date(currentDate);
         yesterday.setDate(currentDate.getDate() - i);
         const formattedDate = formatDateToYYYYMMDD(yesterday);
         tmp.push(formattedDate);
